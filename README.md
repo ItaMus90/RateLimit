@@ -9,9 +9,9 @@ threshold - Max number of requests per URL within a time period (ttl).
 ttl - The time period in which URL visits will be counted.
 
 ````
-threshold by defualt is 10
+threshold by defualt is 2
 
-ttl by defualt is 5
+ttl by defualt is 10
 ````
 
 ## Usage
