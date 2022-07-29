@@ -15,6 +15,8 @@ type URLRequestBody struct {
 
 func IsLimitURL(context *gin.Context, cache *ttlcache.Cache) {
 	var requestBody URLRequestBody
+	var isBlock bool = false
+	var ch = make(chan int, 1)
 
 	if err := context.BindJSON(&requestBody); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing url param"})
@@ -27,7 +29,14 @@ func IsLimitURL(context *gin.Context, cache *ttlcache.Cache) {
 	}
 	hashUrl := md5.New()
 	hashUrl.Write([]byte(requestBody.Url))
-	isBlock := service.IsLimit(hex.EncodeToString(hashUrl.Sum(nil)), cache)
+	
+	go service.IsLimit(hex.EncodeToString(hashUrl.Sum(nil)), cache, ch)
+
+	numIsBlock := <-ch
+
+	if numIsBlock == 1 {
+		isBlock = true
+	}
 
 	context.IndentedJSON(http.StatusOK, gin.H{"block": isBlock})
 }

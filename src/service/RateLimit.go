@@ -3,32 +3,36 @@ package service
 import (
 	"github.com/ReneKroon/ttlcache"
 	"itaMus90/rateLimit/src/entity"
+	"sync"
 )
 
 var InputData entity.InputArguments
+var (
+	mu        sync.Mutex
+	protectMe int
+)
 
-func IsLimit(hashUrl string, cache *ttlcache.Cache) bool {
+
+func IsLimit(hashUrl string, cache *ttlcache.Cache, ch chan int) {
 	cacheValue, ok := cache.Get(hashUrl)
 
 	if !ok {
 		cache.Set(hashUrl, 1)
-		return false
+		ch <- 0
+		return
 	}
 
-	counter := cacheValue.(int)
+	protectMe := cacheValue.(int)
 
-	if counter >= InputData.Threshold {
-		return true
+	if protectMe >= InputData.Threshold {
+		ch <- 1
+		return
 	}
-	counter++
-	cache.Set(hashUrl, counter)
-	return false
+	
+	mu.Lock()
+	protectMe++
+	cache.Set(hashUrl, protectMe)
+	ch <- 0
+	mu.Unlock()
+	return
 }
-
-//func Init() {
-//	skipTtlExtensionOnHit(true)
-//}
-//
-//func skipTtlExtensionOnHit(value bool) {
-//	cache.SkipTtlExtensionOnHit(value)
-//}
